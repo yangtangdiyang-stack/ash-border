@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>灰烬边境 - 双人卡牌原型</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #253247 0%, #10141d 45%, #080a0f 100%);
+      color: #f2e8d8;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 10px 0 4px;
+      letter-spacing: 6px;
+      color: #f1c879;
+      text-shadow: 0 0 14px rgba(241, 200, 121, 0.25);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #b9aa91;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: rgba(11, 15, 24, 0.82);
+      border: 1px solid rgba(241, 200, 121, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .top-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .stat strong {
+      color: #f1c879;
+      font-size: 20px;
+    }
+
+    .notice {
+      min-height: 54px;
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 12px;
+      background: rgba(241, 200, 121, 0.08);
+      border: 1px solid rgba(241, 200, 121, 0.18);
+      line-height: 1.6;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, #4c668a, #263b57);
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+      transition: transform 0.12s ease, filter 0.12s ease;
+    }
+
+    button:hover {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+    }
+
+    button.danger {
+      background: linear-gradient(180deg, #8d413d, #55201e);
+    }
+
+    button.gold {
+      background: linear-gradient(180deg, #b78338, #74501e);
+    }
+
+    button.gray {
+      background: linear-gradient(180deg, #5d6470, #303641);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .card {
+      position: relative;
+      min-height: 190px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(241, 200, 121, 0.35);
+      background: linear-gradient(180deg, #222b37, #111722);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 10px 25px rgba(0,0,0,0.32);
+      cursor: pointer;
+    }
+
+    .card:hover {
+      outline: 2px solid rgba(241, 200, 121, 0.65);
+    }
+
+    .card.selected {
+      outline: 3px solid #f1c879;
+      transform: translateY(-2px);
+    }
+
+    .card.battle {
+      background: linear-gradient(180deg, #3a1c1b, #151820);
+    }
+
+    .card.skill {
+      background: linear-gradient(180deg, #182d44, #111722);
+    }
+
+    .card-title {
+      font-size: 20px;
+      color: #f1c879;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 12px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 10px;
+    }
+
+    .desc {
+      color: #d5cab8;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .hidden-screen {
+      display: none;
+      text-align: center;
+      padding: 50px 20px;
+    }
+
+    .hidden-screen.active {
+      display: block;
+    }
+
+    .game-screen.hidden {
+      display: none;
+    }
+
+    .result-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .small-title {
+      color: #f1c879;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .footer-note {
+      color: #9e9381;
+      font-size: 13px;
+      margin-top: 18px;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .top-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .result-box {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>灰烬边境</h1>
+    <div class="subtitle">双人轮流隐藏手牌版 · 网页原型</div>
+
+    <div class="panel">
+      <div id="hiddenScreen" class="hidden-screen active">
+        <h2 id="hiddenTitle">准备开始</h2>
+        <p id="hiddenText">这是轮流隐藏手牌模式。轮到谁，谁再点击查看。</p>
+        <button class="gold" onclick="startGame()">开始新游戏</button>
+      </div>
+
+      <div id="gameScreen" class="game-screen hidden">
+        <div class="top-bar">
+          <div class="stat">回合<br><strong id="turnNum">1</strong></div>
+          <div class="stat">后备区<br><strong id="reserveNum">0</strong></div>
+          <div class="stat">玩家1手牌<br><strong id="p1Num">0</strong></div>
+          <div class="stat">玩家2手牌<br><strong id="p2Num">0</strong></div>
+        </div>
+
+        <div id="notice" class="notice"></div>
+
+        <div class="buttons" id="mainButtons"></div>
+
+        <div id="cardArea" class="cards"></div>
+
+        <div id="extraArea"></div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      说明：这是本地网页原型，不需要联网。后续可以把卡牌图片放进 images 文件夹，再替换卡面显示。
+    </div>
+  </div>
+
+  <script>
+    const CARD_POOL = [
+      "民兵", "民兵", "民兵",
+      "夜蚀兵", "夜蚀兵", "夜蚀兵",
+      "猩红统帅",
+      "白面执政官",
+      "圣锋骑士",
+      "潜变体",
+      "自爆兵",
+      "战场观测员",
+      "渗透者",
+      "记忆篡改者",
+      "战场干扰员",
+      "战地回收者",
+      "重盾卫",
+      "战争调律者"
+    ];
+
+    const BATTLE_CARDS = new Set([
+      "民兵", "夜蚀兵", "猩红统帅", "白面执政官", "圣锋骑士", "潜变体", "自爆兵"
+    ]);
+
+    const REVIVABLE = new Set([
+      "民兵", "夜蚀兵", "猩红统帅", "白面执政官", "圣锋骑士", "潜变体", "自爆兵"
+    ]);
+
+    const DESC = {
+      "民兵": "基础战斗牌。克制圣锋骑士。",
+      "夜蚀兵": "基础战斗牌。克制民兵。",
+      "猩红统帅": "前线统帅。克制夜蚀兵、潜变体。",
+      "白面执政官": "夜蚀高层。克制夜蚀兵、潜变体、猩红统帅。",
+      "圣锋骑士": "秩序精锐。克制猩红统帅、白面执政官、潜变体。",
+      "潜变体": "动态单位。遇民兵和夜蚀兵有优势，怕高阶夜蚀与骑士。",
+      "自爆兵": "战斗时与对方同归于尽。",
+      "战场观测员": "技能牌。查看后备区。",
+      "渗透者": "技能牌。从后备区抽一张牌。",
+      "记忆篡改者": "技能牌。交换双方全部手牌。",
+      "战场干扰员": "技能牌。对方出牌后，可将其替换为对方随机一张手牌。",
+      "战地回收者": "技能牌。复活一张战斗牌，或获得两张夜蚀兵。",
+      "重盾卫": "技能牌。免疫一次技能。",
+      "战争调律者": "技能牌。重洗双方手牌和后备区。"
+    };
+
+    let players, reserve, turn, currentPlayer, phase, selectedBattle;
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function startGame() {
+      const deck = shuffle([...CARD_POOL]);
+      players = [
+        { name: "玩家1", hand: [], discard: [] },
+        { name: "玩家2", hand: [], discard: [] }
+      ];
+
+      for (let i = 0; i < 6; i++) {
+        players[0].hand.push(deck.pop());
+        players[1].hand.push(deck.pop());
+      }
+
+      reserve = deck;
+      turn = 1;
+      currentPlayer = 0;
+      phase = "action";
+      selectedBattle = [null, null];
+      showPassScreen("玩家1", "请玩家2不要看屏幕。准备好后点击查看手牌。", () => renderActionPhase());
+    }
+
+    function showPassScreen(title, text, callback) {
+      document.getElementById("hiddenScreen").classList.add("active");
+      document.getElementById("gameScreen").classList.add("hidden");
+      document.getElementById("hiddenTitle").textContent = title;
+      document.getElementById("hiddenText").textContent = text;
+      document.getElementById("hiddenScreen").innerHTML = `
+        <h2>${title}</h2>
+        <p>${text}</p>
+        <button class="gold" id="continueBtn">查看</button>
+      `;
+      document.getElementById("continueBtn").onclick = callback;
+    }
+
+    function showGameScreen() {
+      document.getElementById("hiddenScreen").classList.remove("active");
+      document.getElementById("gameScreen").classList.remove("hidden");
+      updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById("turnNum").textContent = turn;
+      document.getElementById("reserveNum").textContent = reserve.length;
+      document.getElementById("p1Num").textContent = players[0].hand.length;
+      document.getElementById("p2Num").textContent = players[1].hand.length;
+    }
+
+    function setNotice(text) {
+      document.getElementById("notice").innerHTML = text;
+    }
+
+    function setButtons(buttons) {
+      const box = document.getElementById("mainButtons");
+      box.innerHTML = "";
+      buttons.forEach(b => {
+        const btn = document.createElement("button");
+        btn.textContent = b.text;
+        btn.className = b.className || "";
+        btn.onclick = b.onclick;
+        box.appendChild(btn);
+      });
+    }
+
+    function renderCards(cards, onClick, filter = null) {
+      const area = document.getElementById("cardArea");
+      area.innerHTML = "";
+      cards.forEach((card, index) => {
+        const usable = filter ? filter(card, index) : true;
+        const div = document.createElement("div");
+        div.className = `card ${BATTLE_CARDS.has(card) ? "battle" : "skill"}`;
+        div.style.opacity = usable ? "1" : "0.42";
+        div.innerHTML = `
+          <div class="card-title">${card}</div>
+          <div class="tag">${BATTLE_CARDS.has(card) ? "战斗牌" : "技能牌"}</div>
+          <div class="desc">${DESC[card] || ""}</div>
+        `;
+        if (usable) div.onclick = () => onClick(card, index);
+        area.appendChild(div);
+      });
+    }
+
+    function clearExtra() {
+      document.getElementById("extraArea").innerHTML = "";
+    }
+
+    function renderActionPhase() {
+      showGameScreen();
+      clearExtra();
+      const p = players[currentPlayer];
+      setNotice(`现在是 <b>${p.name}</b> 的行动阶段。可以使用技能牌，也可以跳过。`);
+      renderCards(p.hand, () => {}, () => false);
+      setButtons([
+        { text: "使用战场观测员", onclick: useObserver },
+        { text: "使用渗透者", onclick: useInfiltrator },
+        { text: "使用记忆篡改者", onclick: useMemoryChanger },
+        { text: "使用战地回收者", onclick: useRecycler },
+        { text: "使用战争调律者", onclick: useFateWeaver },
+        { text: "跳过行动", className: "gray", onclick: nextActionPlayer }
+      ]);
+    }
+
+    function hasCard(playerIndex, card) {
+      return players[playerIndex].hand.includes(card);
+    }
+
+    function removeCard(playerIndex, card) {
+      const hand = players[playerIndex].hand;
+      const idx = hand.indexOf(card);
+      if (idx >= 0) return hand.splice(idx, 1)[0];
+      return null;
+    }
+
+    function useObserver() {
+      if (!hasCard(currentPlayer, "战场观测员")) return alert("你没有战场观测员。请注意：只能使用自己手里有的牌。第二位玩家不要偷看哦。");
+      removeCard(currentPlayer, "战场观测员");
+      players[currentPlayer].discard.push("战场观测员");
+      setNotice(`战场观测员发动。后备区是：<br><b>${reserve.length ? reserve.join("、") : "空"}</b>`);
+      updateStats();
+      renderCards(players[currentPlayer].hand, () => {}, () => false);
+    }
+
+    function useInfiltrator() {
+      if (!hasCard(currentPlayer, "渗透者")) return alert("你没有渗透者。");
+      if (reserve.length === 0) return alert("后备区为空。");
+      removeCard(currentPlayer, "渗透者");
+      players[currentPlayer].discard.push("渗透者");
+      const card = reserve.pop();
+      players[currentPlayer].hand.push(card);
+      setNotice(`渗透者发动。你从后备区获得：<b>${card}</b>`);
+      updateStats();
+      renderCards(players[currentPlayer].hand, () => {}, () => false);
+    }
+
+    function askGuardAgainst(skillName, targetIndex, successCallback, failCallback) {
+      if (!hasCard(targetIndex, "重盾卫")) {
+        successCallback();
+        return;
+      }
+
+      showPassScreen(players[targetIndex].name, `对方发动了【${skillName}】。你有【重盾卫】，可以选择是否免疫。`, () => {
+        showGameScreen();
+        setNotice(`${players[targetIndex].name} 是否使用【重盾卫】免疫【${skillName}】？`);
+        renderCards(players[targetIndex].hand, () => {}, () => false);
+        setButtons([
+          { text: "使用重盾卫", className: "gold", onclick: () => {
+            removeCard(targetIndex, "重盾卫");
+            players[targetIndex].discard.push("重盾卫");
+            failCallback();
+          }},
+          { text: "不使用", className: "gray", onclick: successCallback }
+        ]);
+      });
+    }
+
+    function useMemoryChanger() {
+      if (!hasCard(currentPlayer, "记忆篡改者")) return alert("你没有记忆篡改者。");
+      const enemy = 1 - currentPlayer;
+      removeCard(currentPlayer, "记忆篡改者");
+      players[currentPlayer].discard.push("记忆篡改者");
+
+      askGuardAgainst("记忆篡改者", enemy, () => {
+        const temp = players[currentPlayer].hand;
+        players[currentPlayer].hand = players[enemy].hand;
+        players[enemy].hand = temp;
+        setNotice("记忆篡改者发动成功：双方交换全部手牌。注意交还设备时不要偷看。");
+        updateStats();
+        renderCards(players[currentPlayer].hand, () => {}, () => false);
+        setButtons([{ text: "继续", className: "gold", onclick: renderActionPhase }]);
+      }, () => {
+        setNotice("重盾卫发动：记忆篡改者被免疫。技能牌进入弃牌堆。");
+        updateStats();
+        setButtons([{ text: "继续", className: "gold", onclick: renderActionPhase }]);
+      });
+    }
+
+    function useRecycler() {
+      if (!hasCard(currentPlayer, "战地回收者")) return alert("你没有战地回收者。");
+      const p = players[currentPlayer];
+      const revivable = p.discard.filter(c => REVIVABLE.has(c));
+      setNotice("选择战地回收者的效果。技能发动后，战地回收者进入弃牌堆。");
+      setButtons([
+        { text: "获得两张夜蚀兵", onclick: () => {
+          removeCard(currentPlayer, "战地回收者");
+          p.discard.push("战地回收者");
+          p.hand.push("夜蚀兵", "夜蚀兵");
+          renderActionPhase();
+        }},
+        { text: "取消", className: "gray", onclick: renderActionPhase }
+      ]);
+
+      const area = document.getElementById("cardArea");
+      area.innerHTML = "";
+      if (revivable.length === 0) {
+        area.innerHTML = "<p>你的弃牌堆里没有可复活的战斗牌。</p>";
+        return;
+      }
+      revivable.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "card battle";
+        div.innerHTML = `<div class="card-title">${card}</div><div class="tag">可复活</div><div class="desc">点击复活这张牌。</div>`;
+        div.onclick = () => {
+          removeCard(currentPlayer, "战地回收者");
+          p.discard.push("战地回收者");
+          const idx = p.discard.indexOf(card);
+          if (idx >= 0) p.discard.splice(idx, 1);
+          p.hand.push(card);
+          renderActionPhase();
+        };
+        area.appendChild(div);
+      });
+    }
+
+    function useFateWeaver() {
+      if (!hasCard(currentPlayer, "战争调律者")) return alert("你没有战争调律者。");
+      const enemy = 1 - currentPlayer;
+      const playerCount = players[currentPlayer].hand.length;
+      const enemyCount = players[enemy].hand.length;
+      removeCard(currentPlayer, "战争调律者");
+      players[currentPlayer].discard.push("战争调律者");
+
+      askGuardAgainst("战争调律者", enemy, () => {
+        let all = [...players[currentPlayer].hand, ...players[enemy].hand, ...reserve];
+        shuffle(all);
+        players[currentPlayer].hand = [];
+        players[enemy].hand = [];
+        reserve = [];
+
+        for (let i = 0; i < playerCount - 1 && all.length; i++) players[currentPlayer].hand.push(all.pop());
+        for (let i = 0; i < enemyCount && all.length; i++) players[enemy].hand.push(all.pop());
+        reserve = all;
+
+        setNotice("战争调律者发动：双方手牌与后备区重新洗牌。预言家的价值上升了。很装，但确实有用。");
+        updateStats();
+        renderCards(players[currentPlayer].hand, () => {}, () => false);
+        setButtons([{ text: "继续", className: "gold", onclick: renderActionPhase }]);
+      }, () => {
+        setNotice("重盾卫发动：战争调律者被免疫。技能牌进入弃牌堆。");
+        updateStats();
+        setButtons([{ text: "继续", className: "gold", onclick: renderActionPhase }]);
+      });
+    }
+
+    function nextActionPlayer() {
+      if (currentPlayer === 0) {
+        currentPlayer = 1;
+        showPassScreen("玩家2", "请玩家1不要看屏幕。准备好后点击查看手牌。", renderActionPhase);
+      } else {
+        currentPlayer = 0;
+        showPassScreen("战斗阶段", "双方即将分别选择战斗牌。先由玩家1选择。", () => renderBattleSelect(0));
+      }
+    }
+
+    function renderBattleSelect(playerIndex) {
+      showGameScreen();
+      clearExtra();
+      const p = players[playerIndex];
+      setNotice(`${p.name} 选择一张战斗牌出战。技能牌不能出战。`);
+      setButtons([]);
+      renderCards(p.hand, (card, index) => {
+        selectedBattle[playerIndex] = p.hand.splice(index, 1)[0];
+        if (playerIndex === 0) {
+          showPassScreen("玩家2选择战斗牌", "玩家1已经选好。请玩家1不要看屏幕。", () => renderBattleSelect(1));
+        } else {
+          handleInterferer(0);
+        }
+      }, card => BATTLE_CARDS.has(card));
+    }
+
+    function handleInterferer(step) {
+      if (step === 0) {
+        maybeUseInterferer(1, 0, () => handleInterferer(1));
+      } else if (step === 1) {
+        maybeUseInterferer(0, 1, resolveBattle);
+      }
+    }
+
+    function maybeUseInterferer(userIndex, targetIndex, next) {
+      if (!hasCard(userIndex, "战场干扰员")) {
+        next();
+        return;
+      }
+      showPassScreen(players[userIndex].name, `你可以使用【战场干扰员】干扰 ${players[targetIndex].name} 的出战牌。`, () => {
+        showGameScreen();
+        setNotice(`${players[userIndex].name} 是否使用【战场干扰员】？`);
+        renderCards(players[userIndex].hand, () => {}, () => false);
+        setButtons([
+          { text: "使用战场干扰员", className: "gold", onclick: () => {
+            removeCard(userIndex, "战场干扰员");
+            players[userIndex].discard.push("战场干扰员");
+            askGuardAgainst("战场干扰员", targetIndex, () => {
+              if (players[targetIndex].hand.length > 0) {
+                const rand = Math.floor(Math.random() * players[targetIndex].hand.length);
+                const newCard = players[targetIndex].hand.splice(rand, 1)[0];
+                players[targetIndex].hand.push(selectedBattle[targetIndex]);
+                selectedBattle[targetIndex] = newCard;
+              }
+              next();
+            }, next);
+          }},
+          { text: "不使用", className: "gray", onclick: next }
+        ]);
+      });
+    }
+
+    function canKill(attacker, defender) {
+      if (attacker === "自爆兵") return "both";
+
+      if (attacker === "潜变体") {
+        if (defender === "民兵" || defender === "夜蚀兵") return true;
+        return false;
+      }
+
+      if (defender === "潜变体") {
+        if (["猩红统帅", "白面执政官", "圣锋骑士"].includes(attacker)) return true;
+        return false;
+      }
+
+      const rules = {
+        "夜蚀兵": ["民兵"],
+        "猩红统帅": ["夜蚀兵"],
+        "白面执政官": ["夜蚀兵", "猩红统帅"],
+        "圣锋骑士": ["猩红统帅", "白面执政官"],
+        "民兵": ["圣锋骑士"]
+      };
+      return (rules[attacker] || []).includes(defender);
+    }
+
+    function resolveBattle() {
+      showGameScreen();
+      const c1 = selectedBattle[0];
+      const c2 = selectedBattle[1];
+      const r1 = canKill(c1, c2);
+      const r2 = canKill(c2, c1);
+      let result = "";
+
+      if (r1 === "both" || r2 === "both") {
+        players[0].discard.push(c1);
+        players[1].discard.push(c2);
+        result = "自爆兵触发：双方同归于尽。";
+      } else if (r1 && !r2) {
+        players[0].hand.push(c1);
+        players[1].discard.push(c2);
+        result = "玩家1获胜，出战牌回到玩家1手牌。";
+      } else if (r2 && !r1) {
+        players[1].hand.push(c2);
+        players[0].discard.push(c1);
+        result = "玩家2获胜，出战牌回到玩家2手牌。";
+      } else {
+        players[0].discard.push(c1);
+        players[1].discard.push(c2);
+        result = "双方无法击败对方，全部进入弃牌堆。";
+      }
+
+      updateStats();
+      setNotice(`
+        <b>战斗结果</b><br>
+        玩家1出战：<b>${c1}</b><br>
+        玩家2出战：<b>${c2}</b><br><br>
+        ${result}
+      `);
+      document.getElementById("cardArea").innerHTML = "";
+      setButtons([{ text: "进入下一回合", className: "gold", onclick: nextTurn }]);
+      checkGameOver();
+    }
+
+    function nextTurn() {
+      if (checkGameOver()) return;
+      turn++;
+      currentPlayer = 0;
+      selectedBattle = [null, null];
+      showPassScreen("玩家1", "新回合开始。请玩家2不要看屏幕。", renderActionPhase);
+    }
+
+    function checkGameOver() {
+      if (players[0].hand.length === 0 || players[1].hand.length === 0) {
+        let text = "";
+        if (players[0].hand.length === 0 && players[1].hand.length === 0) text = "平局。";
+        else if (players[0].hand.length === 0) text = "玩家1无手牌，玩家2获胜。";
+        else text = "玩家2无手牌，玩家1获胜。";
+        setNotice(`<b>游戏结束：</b>${text}`);
+        setButtons([{ text: "重新开始", className: "gold", onclick: startGame }]);
+        document.getElementById("cardArea").innerHTML = "";
+        return true;
+      }
+      return false;
+    }
+  </script>
+</body>
+</html>
