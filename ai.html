@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>灰烬边境 - 人机版</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #27344a 0%, #10141d 45%, #07090e 100%);
+      color: #f2e8d8;
+    }
+    .app { max-width: 1180px; margin: 0 auto; padding: 20px; }
+    h1 {
+      text-align: center;
+      margin: 10px 0 4px;
+      letter-spacing: 6px;
+      color: #f1c879;
+      text-shadow: 0 0 14px rgba(241, 200, 121, 0.25);
+    }
+    .subtitle { text-align: center; color: #b9aa91; margin-bottom: 18px; }
+    .panel {
+      background: rgba(11, 15, 24, 0.84);
+      border: 1px solid rgba(241, 200, 121, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    }
+    .top-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+    }
+    .stat strong { color: #f1c879; font-size: 20px; }
+    .notice {
+      min-height: 54px;
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 12px;
+      background: rgba(241, 200, 121, 0.08);
+      border: 1px solid rgba(241, 200, 121, 0.18);
+      line-height: 1.65;
+    }
+    .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, #4c668a, #263b57);
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+      transition: transform 0.12s ease, filter 0.12s ease;
+    }
+    button:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    button.danger { background: linear-gradient(180deg, #8d413d, #55201e); }
+    button.gold { background: linear-gradient(180deg, #b78338, #74501e); }
+    button.gray { background: linear-gradient(180deg, #5d6470, #303641); }
+    button.green { background: linear-gradient(180deg, #3f7f62, #244936); }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .card {
+      min-height: 190px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(241, 200, 121, 0.35);
+      background: linear-gradient(180deg, #222b37, #111722);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 10px 25px rgba(0,0,0,0.32);
+      cursor: pointer;
+    }
+    .card:hover { outline: 2px solid rgba(241, 200, 121, 0.65); }
+    .card.battle { background: linear-gradient(180deg, #3a1c1b, #151820); }
+    .card.skill { background: linear-gradient(180deg, #182d44, #111722); }
+    .card.disabled { opacity: 0.42; cursor: default; }
+    .card-title { font-size: 20px; color: #f1c879; font-weight: bold; margin-bottom: 8px; }
+    .tag {
+      display: inline-block;
+      font-size: 12px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 10px;
+    }
+    .desc { color: #d5cab8; font-size: 14px; line-height: 1.45; }
+    .hidden-screen { display: none; text-align: center; padding: 44px 20px; }
+    .hidden-screen.active { display: block; }
+    .game-screen.hidden { display: none; }
+    .footer-note { color: #9e9381; font-size: 13px; margin-top: 18px; text-align: center; }
+    .mode-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .small-title { color: #f1c879; margin-top: 16px; font-weight: bold; }
+    @media (max-width: 700px) { .top-bar { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>灰烬边境</h1>
+    <div class="subtitle">双人卡牌原型 · 玩家 vs 人机版</div>
+
+    <div class="panel">
+      <div id="hiddenScreen" class="hidden-screen active">
+        <h2>准备开始</h2>
+        <p>选择人机难度。简单偏随机，普通会看克制，困难会更谨慎地使用技能。</p>
+        <div class="mode-row">
+          <button class="green" onclick="startGame('easy')">简单人机</button>
+          <button class="gold" onclick="startGame('normal')">普通人机</button>
+          <button class="danger" onclick="startGame('hard')">困难人机</button>
+        </div>
+      </div>
+
+      <div id="gameScreen" class="game-screen hidden">
+        <div class="top-bar">
+          <div class="stat">回合<br><strong id="turnNum">1</strong></div>
+          <div class="stat">后备区<br><strong id="reserveNum">0</strong></div>
+          <div class="stat">玩家手牌<br><strong id="p1Num">0</strong></div>
+          <div class="stat">人机手牌<br><strong id="p2Num">0</strong></div>
+        </div>
+
+        <div id="notice" class="notice"></div>
+        <div class="buttons" id="mainButtons"></div>
+        <div id="cardArea" class="cards"></div>
+        <div id="extraArea"></div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      保存为 index.html 后双击即可运行。此版不需要 Python，也不需要联网。
+    </div>
+  </div>
+
+  <script>
+    const CARD_POOL = [
+      "民兵", "民兵", "民兵",
+      "夜蚀兵", "夜蚀兵", "夜蚀兵",
+      "猩红统帅", "白面执政官", "圣锋骑士", "潜变体", "自爆兵",
+      "战场观测员", "渗透者", "记忆篡改者", "战场干扰员", "战地回收者", "重盾卫", "战争调律者"
+    ];
+
+    const BATTLE_CARDS = new Set(["民兵", "夜蚀兵", "猩红统帅", "白面执政官", "圣锋骑士", "潜变体", "自爆兵"]);
+    const REVIVABLE = new Set(["民兵", "夜蚀兵", "猩红统帅", "白面执政官", "圣锋骑士", "潜变体", "自爆兵"]);
+
+    const DESC = {
+      "民兵": "基础战斗牌。克制圣锋骑士。",
+      "夜蚀兵": "基础战斗牌。克制民兵。",
+      "猩红统帅": "前线统帅。克制夜蚀兵、潜变体。",
+      "白面执政官": "夜蚀高层。克制夜蚀兵、潜变体、猩红统帅。",
+      "圣锋骑士": "秩序精锐。克制猩红统帅、白面执政官、潜变体。",
+      "潜变体": "动态单位。遇民兵和夜蚀兵有优势，怕高阶夜蚀与骑士。",
+      "自爆兵": "战斗时与对方同归于尽。",
+      "战场观测员": "技能牌。查看后备区。",
+      "渗透者": "技能牌。从后备区抽一张牌。",
+      "记忆篡改者": "技能牌。交换双方全部手牌。",
+      "战场干扰员": "技能牌。对方出牌后，可替换为对方随机一张手牌。",
+      "战地回收者": "技能牌。复活一张战斗牌，或获得两张夜蚀兵。",
+      "重盾卫": "技能牌。免疫一次技能。",
+      "战争调律者": "技能牌。重洗双方手牌和后备区。"
+    };
+
+    let players, reserve, turn, aiDifficulty, selectedBattle, logText;
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function hasCard(i, card) { return players[i].hand.includes(card); }
+    function removeCard(i, card) {
+      const idx = players[i].hand.indexOf(card);
+      if (idx >= 0) return players[i].hand.splice(idx, 1)[0];
+      return null;
+    }
+    function battleCardsOf(i) { return players[i].hand.filter(c => BATTLE_CARDS.has(c)); }
+    function skillCardsOf(i) { return players[i].hand.filter(c => !BATTLE_CARDS.has(c)); }
+
+    function canKill(attacker, defender) {
+      if (attacker === "自爆兵") return "both";
+      if (attacker === "潜变体") return defender === "民兵" || defender === "夜蚀兵";
+      if (defender === "潜变体") return ["猩红统帅", "白面执政官", "圣锋骑士"].includes(attacker);
+      const rules = {
+        "夜蚀兵": ["民兵"],
+        "猩红统帅": ["夜蚀兵"],
+        "白面执政官": ["夜蚀兵", "猩红统帅"],
+        "圣锋骑士": ["猩红统帅", "白面执政官"],
+        "民兵": ["圣锋骑士"]
+      };
+      return (rules[attacker] || []).includes(defender);
+    }
+
+    function cardPower(card) {
+      const table = { "民兵": 1, "夜蚀兵": 2, "潜变体": 3, "圣锋骑士": 4, "猩红统帅": 4, "白面执政官": 5, "自爆兵": 3 };
+      return table[card] || 0;
+    }
+
+    function startGame(difficulty) {
+      aiDifficulty = difficulty;
+      const deck = shuffle([...CARD_POOL]);
+      players = [
+        { name: "玩家", hand: [], discard: [] },
+        { name: "人机", hand: [], discard: [] }
+      ];
+      for (let i = 0; i < 6; i++) {
+        players[0].hand.push(deck.pop());
+        players[1].hand.push(deck.pop());
+      }
+      reserve = deck;
+      turn = 1;
+      selectedBattle = [null, null];
+      logText = `已选择【${difficultyName()}】。`;
+      renderPlayerAction();
+    }
+
+    function difficultyName() {
+      if (aiDifficulty === "easy") return "简单人机";
+      if (aiDifficulty === "normal") return "普通人机";
+      return "困难人机";
+    }
+
+    function showGameScreen() {
+      document.getElementById("hiddenScreen").classList.remove("active");
+      document.getElementById("gameScreen").classList.remove("hidden");
+      updateStats();
+    }
+
+    function showStartScreen() {
+      document.getElementById("gameScreen").classList.add("hidden");
+      const h = document.getElementById("hiddenScreen");
+      h.classList.add("active");
+      h.innerHTML = `
+        <h2>准备开始</h2>
+        <p>选择人机难度。简单偏随机，普通会看克制，困难会更谨慎地使用技能。</p>
+        <div class="mode-row">
+          <button class="green" onclick="startGame('easy')">简单人机</button>
+          <button class="gold" onclick="startGame('normal')">普通人机</button>
+          <button class="danger" onclick="startGame('hard')">困难人机</button>
+        </div>
+      `;
+    }
+
+    function updateStats() {
+      document.getElementById("turnNum").textContent = turn;
+      document.getElementById("reserveNum").textContent = reserve.length;
+      document.getElementById("p1Num").textContent = players[0].hand.length;
+      document.getElementById("p2Num").textContent = players[1].hand.length;
+    }
+
+    function setNotice(html) { document.getElementById("notice").innerHTML = html; }
+    function setButtons(buttons) {
+      const box = document.getElementById("mainButtons");
+      box.innerHTML = "";
+      buttons.forEach(b => {
+        const btn = document.createElement("button");
+        btn.textContent = b.text;
+        btn.className = b.className || "";
+        btn.onclick = b.onclick;
+        box.appendChild(btn);
+      });
+    }
+
+    function renderCards(cards, onClick, filter = null) {
+      const area = document.getElementById("cardArea");
+      area.innerHTML = "";
+      cards.forEach((card, index) => {
+        const usable = filter ? filter(card, index) : true;
+        const div = document.createElement("div");
+        div.className = `card ${BATTLE_CARDS.has(card) ? "battle" : "skill"} ${usable ? "" : "disabled"}`;
+        div.innerHTML = `
+          <div class="card-title">${card}</div>
+          <div class="tag">${BATTLE_CARDS.has(card) ? "战斗牌" : "技能牌"}</div>
+          <div class="desc">${DESC[card] || ""}</div>
+        `;
+        if (usable) div.onclick = () => onClick(card, index);
+        area.appendChild(div);
+      });
+    }
+
+    function renderPlayerAction() {
+      if (checkGameOver()) return;
+      showGameScreen();
+      selectedBattle = [null, null];
+      setNotice(`<b>第 ${turn} 回合 · 玩家行动阶段</b><br>${logText}<br>你可以使用技能牌，也可以直接进入战斗。`);
+      renderCards(players[0].hand, () => {}, () => false);
+      setButtons([
+        { text: "战场观测员", onclick: useObserver },
+        { text: "渗透者", onclick: useInfiltrator },
+        { text: "记忆篡改者", onclick: useMemoryChanger },
+        { text: "战地回收者", onclick: useRecycler },
+        { text: "战争调律者", onclick: useFateWeaver },
+        { text: "进入战斗", className: "gold", onclick: aiActionPhase },
+        { text: "重新开始", className: "gray", onclick: showStartScreen }
+      ]);
+    }
+
+    function useObserver() {
+      if (!hasCard(0, "战场观测员")) return alert("你没有战场观测员。 ");
+      removeCard(0, "战场观测员");
+      players[0].discard.push("战场观测员");
+      logText = `你发动【战场观测员】，后备区：${reserve.length ? reserve.join("、") : "空"}`;
+      renderPlayerAction();
+    }
+
+    function useInfiltrator() {
+      if (!hasCard(0, "渗透者")) return alert("你没有渗透者。 ");
+      if (reserve.length === 0) return alert("后备区为空。 ");
+      removeCard(0, "渗透者");
+      players[0].discard.push("渗透者");
+      const card = reserve.pop();
+      players[0].hand.push(card);
+      logText = `你发动【渗透者】，从后备区获得【${card}】。`;
+      renderPlayerAction();
+    }
+
+    function aiUseGuard(skillName) {
+      if (!hasCard(1, "重盾卫")) return false;
+      if (aiDifficulty === "easy") {
+        if (Math.random() < 0.45) return spendAiGuard(skillName);
+        return false;
+      }
+      if (aiDifficulty === "normal") {
+        if (["记忆篡改者", "战争调律者", "战场干扰员"].includes(skillName)) return spendAiGuard(skillName);
+        return false;
+      }
+      const aiBattle = battleCardsOf(1).length;
+      const playerBattle = battleCardsOf(0).length;
+      if (["记忆篡改者", "战争调律者"].includes(skillName)) return spendAiGuard(skillName);
+      if (skillName === "战场干扰员" && selectedBattle[1] && cardPower(selectedBattle[1]) >= 4) return spendAiGuard(skillName);
+      if (aiBattle >= playerBattle && skillName !== "渗透者") return spendAiGuard(skillName);
+      return false;
+    }
+
+    function spendAiGuard(skillName) {
+      removeCard(1, "重盾卫");
+      players[1].discard.push("重盾卫");
+      logText += `<br>人机使用【重盾卫】，免疫了【${skillName}】。`;
+      return true;
+    }
+
+    function useMemoryChanger() {
+      if (!hasCard(0, "记忆篡改者")) return alert("你没有记忆篡改者。 ");
+      removeCard(0, "记忆篡改者");
+      players[0].discard.push("记忆篡改者");
+      logText = "你发动【记忆篡改者】。";
+      if (!aiUseGuard("记忆篡改者")) {
+        const temp = players[0].hand;
+        players[0].hand = players[1].hand;
+        players[1].hand = temp;
+        logText += "<br>双方交换全部手牌。";
+      }
+      renderPlayerAction();
+    }
+
+    function useRecycler() {
+      if (!hasCard(0, "战地回收者")) return alert("你没有战地回收者。 ");
+      const revivable = players[0].discard.filter(c => REVIVABLE.has(c));
+      setNotice("选择【战地回收者】效果。技能发动后进入弃牌堆。 ");
+      setButtons([
+        { text: "获得两张夜蚀兵", onclick: () => {
+          removeCard(0, "战地回收者");
+          players[0].discard.push("战地回收者");
+          players[0].hand.push("夜蚀兵", "夜蚀兵");
+          logText = "你发动【战地回收者】，获得两张夜蚀兵。";
+          renderPlayerAction();
+        }},
+        { text: "取消", className: "gray", onclick: renderPlayerAction }
+      ]);
+      const area = document.getElementById("cardArea");
+      area.innerHTML = "";
+      if (revivable.length === 0) {
+        area.innerHTML = "<p>没有可复活战斗牌。</p>";
+        return;
+      }
+      revivable.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "card battle";
+        div.innerHTML = `<div class="card-title">${card}</div><div class="tag">可复活</div><div class="desc">点击复活。</div>`;
+        div.onclick = () => {
+          removeCard(0, "战地回收者");
+          players[0].discard.push("战地回收者");
+          const idx = players[0].discard.indexOf(card);
+          if (idx >= 0) players[0].discard.splice(idx, 1);
+          players[0].hand.push(card);
+          logText = `你发动【战地回收者】，复活【${card}】。`;
+          renderPlayerAction();
+        };
+        area.appendChild(div);
+      });
+    }
+
+    function useFateWeaver() {
+      if (!hasCard(0, "战争调律者")) return alert("你没有战争调律者。 ");
+      removeCard(0, "战争调律者");
+      players[0].discard.push("战争调律者");
+      logText = "你发动【战争调律者】。";
+      if (!aiUseGuard("战争调律者")) {
+        reshuffleHandsAndReserve(0, 1, players[0].hand.length + 1, players[1].hand.length);
+        logText += "<br>双方手牌与后备区重新洗牌。";
+      }
+      renderPlayerAction();
+    }
+
+    function reshuffleHandsAndReserve(user, enemy, userOldCount, enemyOldCount) {
+      let all = [...players[user].hand, ...players[enemy].hand, ...reserve];
+      shuffle(all);
+      players[user].hand = [];
+      players[enemy].hand = [];
+      reserve = [];
+      for (let i = 0; i < userOldCount - 1 && all.length; i++) players[user].hand.push(all.pop());
+      for (let i = 0; i < enemyOldCount && all.length; i++) players[enemy].hand.push(all.pop());
+      reserve = all;
+    }
+
+    function aiActionPhase() {
+      if (checkGameOver()) return;
+      const logs = [];
+      const actions = aiChooseActions();
+      actions.forEach(action => {
+        const msg = executeAiAction(action);
+        if (msg) logs.push(msg);
+      });
+      logText = logs.length ? logs.join("<br>") : "人机没有使用技能。";
+      renderBattleSelect();
+    }
+
+    function aiChooseActions() {
+      const actions = [];
+      if (aiDifficulty === "easy") {
+        const skills = skillCardsOf(1).filter(c => c !== "重盾卫" && c !== "战场干扰员");
+        if (skills.length && Math.random() < 0.45) actions.push(randItem(skills));
+        return actions;
+      }
+
+      const aiBattleCount = battleCardsOf(1).length;
+      const playerBattleCount = battleCardsOf(0).length;
+      const aiPower = totalBattlePower(1);
+      const playerPower = totalBattlePower(0);
+
+      if (hasCard(1, "战地回收者") && aiBattleCount <= 2) actions.push("战地回收者");
+      if (hasCard(1, "渗透者") && reserve.length > 0 && players[1].hand.length <= players[0].hand.length + 1) actions.push("渗透者");
+      if (hasCard(1, "战场观测员") && aiDifficulty === "hard" && reserve.length >= 3) actions.push("战场观测员");
+      if (hasCard(1, "记忆篡改者") && aiPower + 2 < playerPower) actions.push("记忆篡改者");
+      if (hasCard(1, "战争调律者") && (players[1].hand.length <= 3 || aiPower + 3 < playerPower)) actions.push("战争调律者");
+
+      if (aiDifficulty === "normal") return actions.slice(0, 1);
+      return actions.slice(0, 2);
+    }
+
+    function totalBattlePower(i) {
+      return battleCardsOf(i).reduce((sum, c) => sum + cardPower(c), 0);
+    }
+
+    function executeAiAction(action) {
+      if (!hasCard(1, action)) return "";
+      if (action === "战场观测员") {
+        removeCard(1, action);
+        players[1].discard.push(action);
+        return "人机发动【战场观测员】，侦察了后备区。";
+      }
+      if (action === "渗透者") {
+        if (reserve.length === 0) return "";
+        removeCard(1, action);
+        players[1].discard.push(action);
+        const card = reserve.pop();
+        players[1].hand.push(card);
+        return "人机发动【渗透者】，从后备区抽取一张牌。";
+      }
+      if (action === "记忆篡改者") {
+        removeCard(1, action);
+        players[1].discard.push(action);
+        if (playerUseGuardAgainstAi("记忆篡改者")) return "人机发动【记忆篡改者】，但你用【重盾卫】免疫了。";
+        const temp = players[0].hand;
+        players[0].hand = players[1].hand;
+        players[1].hand = temp;
+        return "人机发动【记忆篡改者】，双方交换全部手牌。";
+      }
+      if (action === "战地回收者") {
+        removeCard(1, action);
+        players[1].discard.push(action);
+        const revivable = players[1].discard.filter(c => REVIVABLE.has(c));
+        if (revivable.length > 0 && aiDifficulty !== "easy") {
+          revivable.sort((a, b) => cardPower(b) - cardPower(a));
+          const card = revivable[0];
+          const idx = players[1].discard.indexOf(card);
+          if (idx >= 0) players[1].discard.splice(idx, 1);
+          players[1].hand.push(card);
+          return `人机发动【战地回收者】，复活了一张战斗牌。`;
+        }
+        players[1].hand.push("夜蚀兵", "夜蚀兵");
+        return "人机发动【战地回收者】，获得两张夜蚀兵。";
+      }
+      if (action === "战争调律者") {
+        const oldAi = players[1].hand.length;
+        const oldPlayer = players[0].hand.length;
+        removeCard(1, action);
+        players[1].discard.push(action);
+        if (playerUseGuardAgainstAi("战争调律者")) return "人机发动【战争调律者】，但你用【重盾卫】免疫了。";
+        reshuffleHandsAndReserve(1, 0, oldAi, oldPlayer);
+        return "人机发动【战争调律者】，双方手牌与后备区重新洗牌。";
+      }
+      return "";
+    }
+
+    function playerUseGuardAgainstAi(skillName) {
+      if (!hasCard(0, "重盾卫")) return false;
+      return confirm(`人机发动【${skillName}】。你是否使用【重盾卫】免疫？`)
+        ? (removeCard(0, "重盾卫"), players[0].discard.push("重盾卫"), true)
+        : false;
+    }
+
+    function renderBattleSelect() {
+      if (checkGameOver()) return;
+      showGameScreen();
+      setNotice(`<b>战斗阶段</b><br>${logText}<br>请选择一张战斗牌出战。`);
+      setButtons([]);
+      renderCards(players[0].hand, (card, index) => {
+        selectedBattle[0] = players[0].hand.splice(index, 1)[0];
+        selectedBattle[1] = aiChooseBattleCard();
+        maybeAiInterfereThenPlayer();
+      }, card => BATTLE_CARDS.has(card));
+    }
+
+    function aiChooseBattleCard() {
+      const cards = battleCardsOf(1);
+      if (cards.length === 0) {
+        const card = players[1].hand.shift();
+        players[1].discard.push(card);
+        return null;
+      }
+      let chosen;
+      if (aiDifficulty === "easy") {
+        chosen = randItem(cards);
+      } else if (aiDifficulty === "normal") {
+        chosen = chooseCardAgainst(cards, selectedBattle[0], false);
+      } else {
+        chosen = chooseCardAgainst(cards, selectedBattle[0], true);
+      }
+      const idx = players[1].hand.indexOf(chosen);
+      return players[1].hand.splice(idx, 1)[0];
+    }
+
+    function chooseCardAgainst(cards, enemyCard, cautious) {
+      const winning = cards.filter(c => canKill(c, enemyCard) && !canKill(enemyCard, c));
+      if (winning.length) {
+        winning.sort((a, b) => cardPower(a) - cardPower(b));
+        return winning[0];
+      }
+      if (cautious) {
+        const losing = cards.filter(c => canKill(enemyCard, c) && !canKill(c, enemyCard));
+        const safe = cards.filter(c => !losing.includes(c));
+        if (safe.length) {
+          safe.sort((a, b) => cardPower(a) - cardPower(b));
+          return safe[0];
+        }
+      }
+      const sorted = [...cards].sort((a, b) => cardPower(a) - cardPower(b));
+      return sorted[0];
+    }
+
+    function maybeAiInterfereThenPlayer() {
+      let msg = "";
+      if (hasCard(1, "战场干扰员")) {
+        let use = false;
+        if (aiDifficulty === "easy") use = Math.random() < 0.35;
+        if (aiDifficulty === "normal") use = cardPower(selectedBattle[0]) >= 4;
+        if (aiDifficulty === "hard") use = cardPower(selectedBattle[0]) >= 3 || canKill(selectedBattle[0], selectedBattle[1]);
+        if (use) {
+          removeCard(1, "战场干扰员");
+          players[1].discard.push("战场干扰员");
+          if (playerUseGuardAgainstAi("战场干扰员")) {
+            msg += "你用【重盾卫】免疫了人机的【战场干扰员】。<br>";
+          } else if (players[0].hand.length > 0) {
+            const rand = Math.floor(Math.random() * players[0].hand.length);
+            const newCard = players[0].hand.splice(rand, 1)[0];
+            players[0].hand.push(selectedBattle[0]);
+            selectedBattle[0] = newCard;
+            msg += "人机发动【战场干扰员】，你的出战牌被随机替换。<br>";
+          }
+        }
+      }
+      maybePlayerInterfere(msg);
+    }
+
+    function maybePlayerInterfere(prefixMsg) {
+      if (!hasCard(0, "战场干扰员")) {
+        resolveBattle(prefixMsg);
+        return;
+      }
+      setNotice(`${prefixMsg}你可以使用【战场干扰员】干扰人机的出战牌。`);
+      renderCards(players[0].hand, () => {}, () => false);
+      setButtons([
+        { text: "使用战场干扰员", className: "gold", onclick: () => {
+          removeCard(0, "战场干扰员");
+          players[0].discard.push("战场干扰员");
+          if (aiUseGuard("战场干扰员")) {
+            resolveBattle(prefixMsg + "人机用【重盾卫】免疫了你的【战场干扰员】。<br>");
+            return;
+          }
+          if (players[1].hand.length > 0) {
+            const rand = Math.floor(Math.random() * players[1].hand.length);
+            const newCard = players[1].hand.splice(rand, 1)[0];
+            players[1].hand.push(selectedBattle[1]);
+            selectedBattle[1] = newCard;
+          }
+          resolveBattle(prefixMsg + "你发动【战场干扰员】，人机出战牌被随机替换。<br>");
+        }},
+        { text: "不使用", className: "gray", onclick: () => resolveBattle(prefixMsg) }
+      ]);
+    }
+
+    function resolveBattle(prefixMsg = "") {
+      const c1 = selectedBattle[0];
+      const c2 = selectedBattle[1];
+      if (!c1 || !c2) {
+        if (c1) players[0].discard.push(c1);
+        if (c2) players[1].discard.push(c2);
+        logText = prefixMsg + "有一方没有战斗牌，无法正常出战。";
+        endRound(logText);
+        return;
+      }
+
+      const r1 = canKill(c1, c2);
+      const r2 = canKill(c2, c1);
+      let result;
+      if (r1 === "both" || r2 === "both") {
+        players[0].discard.push(c1);
+        players[1].discard.push(c2);
+        result = "自爆兵触发：双方同归于尽。";
+      } else if (r1 && !r2) {
+        players[0].hand.push(c1);
+        players[1].discard.push(c2);
+        result = "你获胜，出战牌回到你的手牌。";
+      } else if (r2 && !r1) {
+        players[1].hand.push(c2);
+        players[0].discard.push(c1);
+        result = "人机获胜，出战牌回到人机手牌。";
+      } else {
+        players[0].discard.push(c1);
+        players[1].discard.push(c2);
+        result = "双方无法击败对方，全部进入弃牌堆。";
+      }
+
+      logText = `${prefixMsg}<b>战斗结果</b><br>你出战：【${c1}】<br>人机出战：【${c2}】<br>${result}`;
+      endRound(logText);
+    }
+
+    function endRound(text) {
+      updateStats();
+      setNotice(text);
+      document.getElementById("cardArea").innerHTML = "";
+      if (checkGameOver()) return;
+      setButtons([{ text: "进入下一回合", className: "gold", onclick: () => { turn++; logText = ""; renderPlayerAction(); } }]);
+    }
+
+    function checkGameOver() {
+      if (players[0].hand.length === 0 || players[1].hand.length === 0) {
+        let text;
+        if (players[0].hand.length === 0 && players[1].hand.length === 0) text = "平局。";
+        else if (players[0].hand.length === 0) text = "你没有手牌，人机获胜。";
+        else text = "人机没有手牌，你获胜。";
+        updateStats();
+        setNotice(`<b>游戏结束：</b>${text}`);
+        document.getElementById("cardArea").innerHTML = "";
+        setButtons([
+          { text: "重新开始", className: "gold", onclick: showStartScreen }
+        ]);
+        return true;
+      }
+      return false;
+    }
+  </script>
+</body>
+</html>
